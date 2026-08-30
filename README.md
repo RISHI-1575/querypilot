@@ -69,7 +69,13 @@ agent on each and checks the results match.
 .venv/bin/python eval/run_eval.py
 ```
 
-Latest run: 12/12 correct on the sample test set.
+Latest run: 17/18 correct (94%) on the test set.
+
+The one miss read "average order value" as a median instead of a mean. The SQL
+ran fine, it was just the wrong reading of the question, so the self-correction
+retry (which fixes broken queries) does not help there. On this data the model
+rarely writes broken SQL, so self-correction acts as a safety net rather than
+something that lifts the score.
 
 ## Files
 

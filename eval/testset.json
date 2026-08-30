@@ -46,5 +46,29 @@
   {
     "question": "How many different products has customer Diya Patel ordered?",
     "sql": "SELECT COUNT(DISTINCT o.product_id) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Diya Patel'"
+  },
+  {
+    "question": "Who is the top spending customer?",
+    "sql": "SELECT c.name FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id GROUP BY c.id ORDER BY SUM(p.price * o.quantity) DESC LIMIT 1"
+  },
+  {
+    "question": "What is the most popular product by units sold?",
+    "sql": "SELECT p.name FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.id ORDER BY SUM(o.quantity) DESC LIMIT 1"
+  },
+  {
+    "question": "How many orders were placed in the first quarter of 2024?",
+    "sql": "SELECT COUNT(*) FROM orders WHERE order_date BETWEEN '2024-01-01' AND '2024-03-31'"
+  },
+  {
+    "question": "What is the average order value?",
+    "sql": "SELECT AVG(o.quantity * p.price) FROM orders o JOIN products p ON o.product_id = p.id"
+  },
+  {
+    "question": "Which region generates the most revenue?",
+    "sql": "SELECT c.region FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id GROUP BY c.region ORDER BY SUM(p.price * o.quantity) DESC LIMIT 1"
+  },
+  {
+    "question": "List products that have never been ordered.",
+    "sql": "SELECT name FROM products WHERE id NOT IN (SELECT DISTINCT product_id FROM orders)"
   }
 ]
