@@ -1,3 +1,6 @@
 ollama
 pandas
 openpyxl
+fastapi
+uvicorn
+python-multipart
