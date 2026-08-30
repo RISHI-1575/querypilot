@@ -1,0 +1,20 @@
+# only README.md is tracked, no other markdown
+*.md
+!README.md
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# env / secrets
+.env
+
+# generated database (built from seed.sql)
+*.db
+
+# scratch
+*.log
+.DS_Store
