@@ -78,15 +78,19 @@ def clean_sql(text: str) -> str:
     return text.strip()
 
 
-def generate_sql(schema: str, question: str, error: str | None = None) -> str:
+def generate_sql(schema: str, question: str, error: str | None = None,
+                 history: list[dict] | None = None) -> str:
     """Ask the model to write a SQL query for the question.
 
     If a previous attempt failed, the error is included so the model can fix it.
+    Recent conversation turns are added so follow-up questions ("and the North
+    region?") can refer back to what was already asked.
 
     Args:
         schema: The database schema (CREATE statements).
         question: The user's question in plain English.
         error: The error from the last attempt, if any.
+        history: Earlier turns as {"q": ..., "sql": ...} dicts.
 
     Returns:
         The generated SQL query.
@@ -96,8 +100,16 @@ def generate_sql(schema: str, question: str, error: str | None = None) -> str:
         "SELECT query that answers the question. Return only the SQL, no "
         "explanation and no markdown.\n\n"
         f"Schema:\n{schema}\n\n"
-        f"Question: {question}\n"
     )
+
+    # give the model the last few turns so follow-ups make sense
+    if history:
+        recent = history[-4:]
+        turns = "\n".join(f"Q: {h['q']}\nSQL: {h['sql']}" for h in recent)
+        prompt += f"Earlier in this chat:\n{turns}\n\n"
+
+    prompt += f"Question: {question}\n"
+
     if error:
         prompt += f"\nThe previous query failed with this error: {error}\nFix it."
 
@@ -105,13 +117,14 @@ def generate_sql(schema: str, question: str, error: str | None = None) -> str:
     return clean_sql(resp["message"]["content"])
 
 
-def ask(question: str) -> dict:
+def ask(question: str, history: list[dict] | None = None) -> dict:
     """Answer a question end to end.
 
     Writes SQL, checks it, runs it, and retries on failure up to MAX_RETRIES.
 
     Args:
         question: The user's question.
+        history: Earlier turns in the chat, for follow-up context.
 
     Returns:
         A dict with keys: sql, rows, columns, error. On success error is None;
@@ -125,7 +138,7 @@ def ask(question: str) -> dict:
 
     # try, and retry with the error fed back in
     for attempt in range(MAX_RETRIES + 1):
-        sql = generate_sql(schema, question, error)
+        sql = generate_sql(schema, question, error, history)
 
         if not is_safe(sql):
             conn.close()

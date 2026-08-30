@@ -28,6 +28,7 @@ app.mount("/static", StaticFiles(directory="web"), name="static")
 
 class Question(BaseModel):
     question: str
+    history: list[dict] = []  # earlier turns: {"q": ..., "sql": ...}
 
 
 @app.on_event("startup")
@@ -43,7 +44,7 @@ def home() -> FileResponse:
 @app.post("/ask")
 def ask_endpoint(payload: Question) -> dict:
     """Answer a question and return the sql, data, chart and a short trace."""
-    result = ask(payload.question)
+    result = ask(payload.question, payload.history)
 
     if result["error"]:
         return {
