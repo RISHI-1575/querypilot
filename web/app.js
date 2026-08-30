@@ -1,73 +1,173 @@
-// Frontend logic for QueryPilot.
-// Sends the question to the backend and draws the answer, chart and table.
-
-let chart = null;  // the current Chart.js instance, so we can replace it
+// Frontend chat logic for QueryPilot.
+// Keeps the conversation, sends past turns so follow-ups work, and draws
+// each answer (text + chart + table + sql) as a chat bubble.
 
 const $ = (id) => document.getElementById(id);
+const messages = $("messages");
 
-// wire up the buttons
-$("ask-btn").onclick = runAsk;
-$("question").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") runAsk();
+let turns = [];       // past turns: {q, sql} — sent back so the model has context
+let chartCount = 0;   // gives each chart canvas a unique id
+
+const CHART_COLORS = [
+    "#2f6fed", "#f5a623", "#38b26b",
+    "#e0567b", "#8a5cf6", "#22b8cf",
+];
+
+
+// wire up the composer and the example chips
+$("composer").addEventListener("submit", (e) => {
+    e.preventDefault();
+    send($("question").value);
 });
 $("file").onchange = runUpload;
-document.querySelectorAll(".chip").forEach((chip) => {
-    chip.onclick = () => {
-        $("question").value = chip.textContent;
-        runAsk();
-    };
+messages.addEventListener("click", (e) => {
+    if (e.target.classList.contains("chip")) send(e.target.textContent);
 });
 
 
-async function runAsk() {
-    const question = $("question").value.trim();
+async function send(text) {
+    const question = text.trim();
     if (!question) return;
 
-    show("loading");
-    hide("result");
-    hide("error");
+    addUser(question);
+    $("question").value = "";
+
+    const typing = addTyping();
 
     const resp = await fetch("/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, history: turns }),
     });
     const data = await resp.json();
 
-    hide("loading");
+    typing.remove();
 
     if (data.error) {
-        $("error").textContent = "Could not answer: " + data.error;
-        show("error");
+        addError("Couldn't answer that: " + data.error);
         return;
     }
 
-    render(data);
+    addBotAnswer(data);
+    turns.push({ q: question, sql: data.sql });  // remember this turn
 }
 
 
-function render(data) {
-    $("answer").textContent = data.answer;
-    $("sql").textContent = data.sql;
+// --- message builders ---
 
-    // trace list
-    $("trace").innerHTML = "";
-    data.trace.forEach((step) => {
-        const li = document.createElement("li");
-        li.textContent = step;
-        $("trace").appendChild(li);
-    });
-
-    // show the result first so the chart can measure its container
-    show("result");
-
-    drawTable(data.columns, data.rows);
-    drawChart(data.chart, data.columns, data.rows);
+function addUser(text) {
+    const el = bubble("user");
+    el.querySelector(".bubble").textContent = text;
+    scroll();
 }
 
 
-function drawTable(columns, rows) {
-    let html = "<div class='table-scroll'><table><thead><tr>";
+function addError(text) {
+    const el = bubble("bot");
+    const b = el.querySelector(".bubble");
+    b.classList.add("error");
+    b.textContent = text;
+    scroll();
+}
+
+
+function addTyping() {
+    const el = bubble("bot");
+    el.querySelector(".bubble").innerHTML =
+        '<div class="typing"><span></span><span></span><span></span></div>';
+    scroll();
+    return el;
+}
+
+
+function addBotAnswer(data) {
+    const el = bubble("bot");
+    const b = el.querySelector(".bubble");
+
+    // plain-english answer
+    const p = document.createElement("p");
+    p.className = "answer";
+    p.textContent = data.answer;
+    b.appendChild(p);
+
+    // one number -> big KPI; otherwise a chart
+    if (data.chart === "kpi") {
+        b.appendChild(kpiEl(data.columns, data.rows));
+    } else if (data.chart !== "table") {
+        b.appendChild(chartEl(data.chart, data.columns, data.rows));
+    }
+
+    // the data table
+    b.appendChild(tableEl(data.columns, data.rows));
+
+    // sql + trace, tucked away
+    b.appendChild(detailsEl("Show SQL", preEl(data.sql)));
+    b.appendChild(detailsEl("How it worked", traceEl(data.trace)));
+
+    scroll();
+}
+
+
+// --- small element helpers ---
+
+function bubble(who) {
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + who;
+    wrap.innerHTML = '<div class="bubble"></div>';
+    messages.appendChild(wrap);
+    return wrap;
+}
+
+
+function kpiEl(columns, rows) {
+    const div = document.createElement("div");
+    div.className = "kpi";
+    div.innerHTML =
+        `<div class="kpi-value">${rows[0][0]}</div>` +
+        `<div class="kpi-label">${columns[0]}</div>`;
+    return div;
+}
+
+
+function chartEl(type, columns, rows) {
+    const box = document.createElement("div");
+    box.className = "chart-box";
+    const canvas = document.createElement("canvas");
+    canvas.id = "chart-" + (++chartCount);
+    box.appendChild(canvas);
+
+    const labels = rows.map((r) => r[0]);
+    const values = rows.map((r) => r[1]);
+
+    // Chart.js needs the canvas in the DOM before it can size itself
+    setTimeout(() => {
+        new Chart(canvas, {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: columns[1],
+                    data: values,
+                    backgroundColor: CHART_COLORS,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: type === "pie" } },
+            },
+        });
+    }, 0);
+
+    return box;
+}
+
+
+function tableEl(columns, rows) {
+    const scroll = document.createElement("div");
+    scroll.className = "table-scroll";
+
+    let html = "<table><thead><tr>";
     columns.forEach((c) => (html += `<th>${c}</th>`));
     html += "</tr></thead><tbody>";
     rows.forEach((row) => {
@@ -75,59 +175,54 @@ function drawTable(columns, rows) {
         row.forEach((cell) => (html += `<td>${cell}</td>`));
         html += "</tr>";
     });
-    html += "</tbody></table></div>";
-    $("table-box").innerHTML = html;
+    html += "</tbody></table>";
+
+    scroll.innerHTML = html;
+    return scroll;
 }
 
 
-function drawChart(type, columns, rows) {
-    // reset the KPI and chart areas
-    hide("kpi");
-    hide("chart-box");
-    if (chart) chart.destroy();
+function detailsEl(title, child) {
+    const d = document.createElement("details");
+    const s = document.createElement("summary");
+    s.textContent = title;
+    d.appendChild(s);
+    d.appendChild(child);
+    return d;
+}
 
-    // a single number -> show it big, with the column name as the label
-    if (type === "kpi") {
-        $("kpi").querySelector(".kpi-value").textContent = rows[0][0];
-        $("kpi").querySelector(".kpi-label").textContent = columns[0];
-        show("kpi");
-        return;
-    }
 
-    if (type === "table") return;  // table already shown
+function preEl(text) {
+    const pre = document.createElement("pre");
+    pre.textContent = text;
+    return pre;
+}
 
-    // bar / line / pie
-    const labels = rows.map((r) => r[0]);
-    const values = rows.map((r) => r[1]);
-    show("chart-box");
 
-    chart = new Chart($("chart"), {
-        type: type,
-        data: {
-            labels: labels,
-            datasets: [{
-                label: columns[1],
-                data: values,
-                backgroundColor: [
-                    "#2f6fed", "#f5a623", "#38b26b",
-                    "#e0567b", "#8a5cf6", "#22b8cf",
-                ],
-            }],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: type === "pie" } },
-        },
+function traceEl(steps) {
+    const ul = document.createElement("ul");
+    ul.className = "trace";
+    steps.forEach((step) => {
+        const li = document.createElement("li");
+        li.textContent = step;
+        ul.appendChild(li);
     });
+    return ul;
 }
 
+
+function scroll() {
+    messages.scrollTop = messages.scrollHeight;
+}
+
+
+// --- file upload ---
 
 async function runUpload() {
     const file = $("file").files[0];
     if (!file) return;
 
-    $("upload-status").textContent = "loading…";
+    const typing = addTyping();
 
     const form = new FormData();
     form.append("file", file);
@@ -135,10 +230,10 @@ async function runUpload() {
     const resp = await fetch("/upload", { method: "POST", body: form });
     const data = await resp.json();
 
-    $("upload-status").textContent = "loaded table: " + data.table;
+    typing.remove();
+
+    const el = bubble("bot");
+    el.querySelector(".bubble").textContent =
+        `Loaded your file as table "${data.table}". Ask me anything about it.`;
+    scroll();
 }
-
-
-// small helpers
-function show(id) { $(id).classList.remove("hidden"); }
-function hide(id) { $(id).classList.add("hidden"); }

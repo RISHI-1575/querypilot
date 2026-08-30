@@ -8,62 +8,37 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <h1>QueryPilot</h1>
-            <p>Ask your data a question in plain English.</p>
-        </header>
-
-        <div class="upload-row">
+    <div class="chat">
+        <header class="chat-head">
+            <div class="brand">
+                <span class="dot"></span>
+                QueryPilot
+            </div>
             <label class="upload-btn">
-                Upload CSV / Excel
+                Upload data
                 <input type="file" id="file" accept=".csv,.xlsx,.xls" hidden>
             </label>
-            <span id="upload-status"></span>
-        </div>
+        </header>
 
-        <div class="ask-row">
-            <input type="text" id="question" placeholder="e.g. total revenue per category">
-            <button id="ask-btn">Ask</button>
-        </div>
-
-        <div class="examples">
-            <span>Try:</span>
-            <button class="chip">How many customers are in the South region?</button>
-            <button class="chip">What is the total revenue per product category?</button>
-            <button class="chip">Which product has the highest price?</button>
-        </div>
-
-        <div id="loading" class="hidden">
-            <span class="spinner"></span>
-            <span>thinking…</span>
-        </div>
-
-        <div id="result" class="hidden">
-            <div id="answer" class="answer"></div>
-
-            <div id="kpi" class="kpi hidden">
-                <div class="kpi-value"></div>
-                <div class="kpi-label"></div>
+        <div id="messages" class="messages">
+            <!-- welcome message -->
+            <div class="msg bot">
+                <div class="bubble">
+                    <p>Hey 👋 I'm QueryPilot. Ask me anything about your data and I'll
+                    figure out the query, run it, and show you the answer.</p>
+                    <div class="chips">
+                        <button class="chip">How many customers are in the South region?</button>
+                        <button class="chip">What is the total revenue per product category?</button>
+                        <button class="chip">Which product has the highest price?</button>
+                    </div>
+                </div>
             </div>
-            <div id="chart-box" class="card hidden">
-                <canvas id="chart"></canvas>
-            </div>
-
-            <div id="table-box" class="card"></div>
-
-            <details class="card">
-                <summary>Show SQL</summary>
-                <pre id="sql"></pre>
-            </details>
-
-            <details class="card">
-                <summary>How it worked</summary>
-                <ul id="trace"></ul>
-            </details>
         </div>
 
-        <div id="error" class="error hidden"></div>
+        <form class="composer" id="composer">
+            <input type="text" id="question" placeholder="Ask a question…" autocomplete="off">
+            <button type="submit" id="send" aria-label="Send">↑</button>
+        </form>
     </div>
 
     <script src="/static/app.js"></script>
