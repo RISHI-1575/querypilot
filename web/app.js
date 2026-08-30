@@ -58,15 +58,16 @@ function render(data) {
         $("trace").appendChild(li);
     });
 
+    // show the result first so the chart can measure its container
+    show("result");
+
     drawTable(data.columns, data.rows);
     drawChart(data.chart, data.columns, data.rows);
-
-    show("result");
 }
 
 
 function drawTable(columns, rows) {
-    let html = "<table><thead><tr>";
+    let html = "<div class='table-scroll'><table><thead><tr>";
     columns.forEach((c) => (html += `<th>${c}</th>`));
     html += "</tr></thead><tbody>";
     rows.forEach((row) => {
@@ -74,7 +75,7 @@ function drawTable(columns, rows) {
         row.forEach((cell) => (html += `<td>${cell}</td>`));
         html += "</tr>";
     });
-    html += "</tbody></table>";
+    html += "</tbody></table></div>";
     $("table-box").innerHTML = html;
 }
 
@@ -85,9 +86,10 @@ function drawChart(type, columns, rows) {
     hide("chart-box");
     if (chart) chart.destroy();
 
-    // a single number -> show it big
+    // a single number -> show it big, with the column name as the label
     if (type === "kpi") {
-        $("kpi").textContent = rows[0][0];
+        $("kpi").querySelector(".kpi-value").textContent = rows[0][0];
+        $("kpi").querySelector(".kpi-label").textContent = columns[0];
         show("kpi");
         return;
     }

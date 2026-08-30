@@ -34,12 +34,18 @@
             <button class="chip">Which product has the highest price?</button>
         </div>
 
-        <div id="loading" class="hidden">thinking…</div>
+        <div id="loading" class="hidden">
+            <span class="spinner"></span>
+            <span>thinking…</span>
+        </div>
 
         <div id="result" class="hidden">
             <div id="answer" class="answer"></div>
 
-            <div id="kpi" class="kpi hidden"></div>
+            <div id="kpi" class="kpi hidden">
+                <div class="kpi-value"></div>
+                <div class="kpi-label"></div>
+            </div>
             <div id="chart-box" class="card hidden">
                 <canvas id="chart"></canvas>
             </div>
