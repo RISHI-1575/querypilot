@@ -50,8 +50,8 @@ def get_schema(conn: sqlite3.Connection) -> str:
     return "\n\n".join(tables)
 
 
-def run_query(conn: sqlite3.Connection, sql: str) -> list[tuple]:
-    """Run a SQL query and return all rows.
+def run_query(conn: sqlite3.Connection, sql: str) -> tuple[list[tuple], list[str]]:
+    """Run a SQL query and return its rows and column names.
 
     Raises sqlite3.Error if the query is invalid — the agent uses that
     error message to fix itself and try again.
@@ -61,7 +61,9 @@ def run_query(conn: sqlite3.Connection, sql: str) -> list[tuple]:
         sql: The SQL query to run.
 
     Returns:
-        A list of result rows.
+        A tuple of (rows, column_names).
     """
     cur = conn.execute(sql)
-    return cur.fetchall()
+    rows = cur.fetchall()
+    columns = [d[0] for d in cur.description] if cur.description else []
+    return rows, columns
