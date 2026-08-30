@@ -4,7 +4,8 @@ Type a question, see the SQL the agent wrote and the answer. Type 'exit' to quit
 """
 
 import db
-from agent import ask
+from agent import ask, explain
+from charts import pick_chart
 
 
 def main() -> None:
@@ -21,10 +22,15 @@ def main() -> None:
         print("\nSQL:", result["sql"])
         if result["error"]:
             print("Error:", result["error"], "\n")
-        else:
-            for row in result["rows"]:
-                print(row)
-            print()
+            continue
+
+        for row in result["rows"]:
+            print(row)
+
+        answer = explain(question, result["columns"], result["rows"])
+        chart = pick_chart(result["columns"], result["rows"])
+        print("\nAnswer:", answer)
+        print("Chart:", chart, "\n")
 
 
 if __name__ == "__main__":

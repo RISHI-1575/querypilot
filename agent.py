@@ -8,6 +8,8 @@ The flow is a simple loop:
     question -> write sql -> safety check -> run -> (error? retry) -> rows
 """
 
+import re
+
 import ollama
 
 import db
@@ -57,13 +59,22 @@ def is_safe(sql: str) -> bool:
 
 
 def clean_sql(text: str) -> str:
-    """Strip markdown fences the model sometimes adds around the SQL."""
-    text = text.strip()
-    if text.startswith("```"):
-        # drop the first line (``` or ```sql) and the closing fence
-        lines = text.splitlines()
-        lines = [ln for ln in lines if not ln.startswith("```")]
-        text = "\n".join(lines)
+    """Pull a clean single SQL query out of the model's reply.
+
+    Handles markdown fences and stray prose by grabbing everything from the
+    first SELECT/WITH up to the first semicolon.
+    """
+    text = text.replace("```", " ")
+
+    # start at the first SELECT or WITH, dropping any text before it
+    match = re.search(r"\b(select|with)\b", text, re.IGNORECASE)
+    if match:
+        text = text[match.start():]
+
+    # keep only the first statement
+    if ";" in text:
+        text = text[:text.index(";")]
+
     return text.strip()
 
 
@@ -103,8 +114,8 @@ def ask(question: str) -> dict:
         question: The user's question.
 
     Returns:
-        A dict with keys: sql, rows, error. On success error is None; on
-        failure rows is None.
+        A dict with keys: sql, rows, columns, error. On success error is None;
+        on failure rows is None.
     """
     conn = db.get_connection()
     schema = db.get_schema(conn)
@@ -118,17 +129,46 @@ def ask(question: str) -> dict:
 
         if not is_safe(sql):
             conn.close()
-            return {"sql": sql, "rows": None, "error": "blocked: not a read-only query"}
+            return {"sql": sql, "rows": None, "columns": [], "attempts": attempt + 1,
+                    "error": "blocked: not a read-only query"}
 
         try:
-            rows = db.run_query(conn, sql)
+            rows, columns = db.run_query(conn, sql)
             conn.close()
-            return {"sql": sql, "rows": rows, "error": None}
+            return {"sql": sql, "rows": rows, "columns": columns,
+                    "attempts": attempt + 1, "error": None}
         except Exception as e:
             error = str(e)  # loop again and let the model fix it
 
     conn.close()
-    return {"sql": sql, "rows": None, "error": error}
+    return {"sql": sql, "rows": None, "columns": [],
+            "attempts": MAX_RETRIES + 1, "error": error}
+
+
+def explain(question: str, columns: list[str], rows: list[tuple]) -> str:
+    """Turn a query result into a short plain-English answer.
+
+    Args:
+        question: The original question.
+        columns: The result column names.
+        rows: The result rows.
+
+    Returns:
+        A one or two sentence answer.
+    """
+    if not rows:
+        return "No results found."
+
+    # keep the prompt small — only send the first rows
+    preview = [columns] + [list(r) for r in rows[:30]]
+    prompt = (
+        "Answer the question in one or two short sentences based only on this "
+        "result. Do not mention SQL.\n\n"
+        f"Question: {question}\n"
+        f"Result: {preview}\n"
+    )
+    resp = ollama.chat(model=MODEL, messages=[{"role": "user", "content": prompt}])
+    return resp["message"]["content"].strip()
 
 
 # Quick self-check for the safety guard. Run: python agent.py
