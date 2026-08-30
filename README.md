@@ -4,6 +4,8 @@ Ask questions about your data in plain English and get answers back. QueryPilot
 turns the question into SQL, checks it is safe to run, runs it, and fixes its own
 query if it fails.
 
+![querypilot chat](docs/1-welcome.png)
+
 ## How it works
 
 ```
