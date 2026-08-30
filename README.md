@@ -14,6 +14,24 @@ question -> write sql -> safety check -> run -> (error? retry) -> answer
 - The query is checked to make sure it is read-only (only SELECT is allowed).
 - If the query errors, the error is fed back to the model and it tries again.
 
+## Screenshots
+
+The web app is a chat. You ask a question, it replies, and it remembers the
+earlier turns so follow-ups work.
+
+Ask a question and get a plain-English answer with the data:
+
+![answer](docs/2-answer.png)
+
+Follow-up questions use the previous message for context (here "what about the
+North region?" after asking about the South):
+
+![follow up](docs/3-followup.png)
+
+When the result fits a chart, it draws one:
+
+![chart](docs/4-chart.png)
+
 ## Setup
 
 ```bash
