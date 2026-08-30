@@ -27,7 +27,16 @@ You also need [Ollama](https://ollama.com) running with a coder model:
 ollama pull qwen3-coder:30b
 ```
 
-## Run
+## Run the web app
+
+```bash
+.venv/bin/uvicorn app:app
+```
+
+Then open http://127.0.0.1:8000 and ask a question. You get a plain-English
+answer, a chart, the data table, the SQL, and a short trace of what the agent did.
+
+## Run in the terminal
 
 ```bash
 .venv/bin/python main.py
@@ -60,6 +69,8 @@ agent on each and checks the results match.
 .venv/bin/python eval/run_eval.py
 ```
 
+Latest run: 12/12 correct on the sample test set.
+
 ## Files
 
 - `seed.sql` - sample sales database (customers, products, orders)
@@ -68,4 +79,6 @@ agent on each and checks the results match.
 - `loader.py` - load CSV / Excel files into the database
 - `charts.py` - pick a chart type for a result
 - `main.py` - command-line runner
+- `app.py` - web backend (FastAPI)
+- `web/` - the web page (HTML, CSS, JS)
 - `eval/` - test set and evaluation script
