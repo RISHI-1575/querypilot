@@ -1,0 +1,50 @@
+[
+  {
+    "question": "How many customers are there?",
+    "sql": "SELECT COUNT(*) FROM customers"
+  },
+  {
+    "question": "How many products are in the Electronics category?",
+    "sql": "SELECT COUNT(*) FROM products WHERE category = 'Electronics'"
+  },
+  {
+    "question": "What is the total number of orders?",
+    "sql": "SELECT COUNT(*) FROM orders"
+  },
+  {
+    "question": "List all product categories.",
+    "sql": "SELECT DISTINCT category FROM products"
+  },
+  {
+    "question": "What is the price of the Office Chair?",
+    "sql": "SELECT price FROM products WHERE name = 'Office Chair'"
+  },
+  {
+    "question": "What is the total revenue per product category?",
+    "sql": "SELECT p.category, SUM(p.price * o.quantity) FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category"
+  },
+  {
+    "question": "How many orders did customer Aarav Sharma place?",
+    "sql": "SELECT COUNT(*) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Aarav Sharma'"
+  },
+  {
+    "question": "Which product has the highest price?",
+    "sql": "SELECT name FROM products ORDER BY price DESC LIMIT 1"
+  },
+  {
+    "question": "What is the total quantity sold for the Wireless Mouse?",
+    "sql": "SELECT SUM(o.quantity) FROM orders o JOIN products p ON o.product_id = p.id WHERE p.name = 'Wireless Mouse'"
+  },
+  {
+    "question": "How many customers are in the South region?",
+    "sql": "SELECT COUNT(*) FROM customers WHERE region = 'South'"
+  },
+  {
+    "question": "What is the average product price?",
+    "sql": "SELECT AVG(price) FROM products"
+  },
+  {
+    "question": "How many different products has customer Diya Patel ordered?",
+    "sql": "SELECT COUNT(DISTINCT o.product_id) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Diya Patel'"
+  }
+]

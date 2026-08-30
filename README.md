@@ -35,13 +35,37 @@ ollama pull qwen3-coder:30b
 
 Then ask things like:
 
-- Which region has the most customers?
+- How many customers are in the South region?
 - What is the total revenue per product category?
-- Show the top 3 products by quantity sold.
+- Which product has the highest price?
+
+You get the SQL, the rows, a plain-English answer, and a suggested chart type.
+
+## Use your own data
+
+You can load a CSV or Excel file and ask questions about it. Column names are
+cleaned and the types are inferred automatically.
+
+```python
+import loader
+loader.load_file("sales.csv")   # becomes a table you can query
+```
+
+## Evaluation
+
+There is a small test set of questions with known-correct SQL. The eval runs the
+agent on each and checks the results match.
+
+```bash
+.venv/bin/python eval/run_eval.py
+```
 
 ## Files
 
 - `seed.sql` - sample sales database (customers, products, orders)
 - `db.py` - database setup, schema, running queries
-- `agent.py` - the agent: writes SQL, safety check, self-correcting loop
+- `agent.py` - the agent: writes SQL, safety check, self-correcting loop, explain
+- `loader.py` - load CSV / Excel files into the database
+- `charts.py` - pick a chart type for a result
 - `main.py` - command-line runner
+- `eval/` - test set and evaluation script
