@@ -20,6 +20,7 @@ $("composer").addEventListener("submit", (e) => {
     send($("question").value);
 });
 $("file").onchange = runUpload;
+$("demo").onclick = runDemo;
 messages.addEventListener("click", (e) => {
     if (e.target.classList.contains("chip")) send(e.target.textContent);
 });
@@ -90,15 +91,19 @@ function addBotAnswer(data) {
     p.textContent = data.answer;
     b.appendChild(p);
 
-    // one number -> big KPI; otherwise a chart
+    // one number -> big KPI; otherwise chart + table side by side
     if (data.chart === "kpi") {
         b.appendChild(kpiEl(data.columns, data.rows));
+        b.appendChild(tableEl(data.columns, data.rows));
     } else if (data.chart !== "table") {
-        b.appendChild(chartEl(data.chart, data.columns, data.rows));
+        const row = document.createElement("div");
+        row.className = "result-row";
+        row.appendChild(chartEl(data.chart, data.columns, data.rows));
+        row.appendChild(tableEl(data.columns, data.rows));
+        b.appendChild(row);
+    } else {
+        b.appendChild(tableEl(data.columns, data.rows));
     }
-
-    // the data table
-    b.appendChild(tableEl(data.columns, data.rows));
 
     // sql + trace, tucked away
     b.appendChild(detailsEl("Show SQL", preEl(data.sql)));
@@ -231,9 +236,21 @@ async function runUpload() {
     const data = await resp.json();
 
     typing.remove();
+    loadedMessage(`Loaded your file — ${data.table}. Ask me anything about it.`);
+    $("file").value = "";   // so re-picking the same file fires onchange again
+}
 
+
+async function runDemo() {
+    const typing = addTyping();
+    await fetch("/demo", { method: "POST" });
+    typing.remove();
+    loadedMessage("Demo data loaded — a small sales database (customers, products, orders). Ask me anything about it.");
+}
+
+
+function loadedMessage(text) {
     const el = bubble("bot");
-    el.querySelector(".bubble").textContent =
-        `Loaded your file as table "${data.table}". Ask me anything about it.`;
+    el.querySelector(".bubble").textContent = text;
     scroll();
 }

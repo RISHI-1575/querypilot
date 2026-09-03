@@ -40,7 +40,7 @@ body {
 
 /* whole chat is one full-height column, centred */
 .chat {
-    max-width: 760px;
+    max-width: 900px;
     height: 100dvh;
     margin: 0 auto;
     display: flex;
@@ -209,8 +209,29 @@ body {
 }
 
 .chart-box {
-    height: 280px;
+    height: 260px;
     position: relative;
+}
+
+
+/* chart + table side by side */
+.result-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s3);
+    align-items: start;
+}
+
+.result-row .chart-box {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--s2);
+}
+
+@media (max-width: 720px) {
+    .result-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 
@@ -219,6 +240,8 @@ body {
     overflow-x: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
+    max-height: 280px;
+    overflow-y: auto;
 }
 
 table {

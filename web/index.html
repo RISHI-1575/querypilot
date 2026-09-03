@@ -14,9 +14,10 @@
                 <span class="dot"></span>
                 QueryPilot
             </div>
+            <button type="button" class="upload-btn" id="demo">Load demo data</button>
             <label class="upload-btn">
                 Upload data
-                <input type="file" id="file" accept=".csv,.xlsx,.xls" hidden>
+                <input type="file" id="file" accept=".csv,.xlsx,.xls,.db,.sqlite,.sqlite3,.sql" hidden>
             </label>
         </header>
 
@@ -24,13 +25,9 @@
             <!-- welcome message -->
             <div class="msg bot">
                 <div class="bubble">
-                    <p>Hey 👋 I'm QueryPilot. Ask me anything about your data and I'll
-                    figure out the query, run it, and show you the answer.</p>
-                    <div class="chips">
-                        <button class="chip">How many customers are in the South region?</button>
-                        <button class="chip">What is the total revenue per product category?</button>
-                        <button class="chip">Which product has the highest price?</button>
-                    </div>
+                    <p>Hey 👋 I'm QueryPilot. Upload a CSV, Excel, or SQLite file (or load
+                    the demo data) and I'll figure out the query, run it, and show you
+                    the answer.</p>
                 </div>
             </div>
         </div>

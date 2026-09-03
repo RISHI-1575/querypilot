@@ -47,64 +47,50 @@ You also need [Ollama](https://ollama.com) running with a coder model:
 ollama pull qwen3-coder:30b
 ```
 
-## Run the web app
+## Run it
+
+Everything — database, agent, chart picker, and the FastAPI web backend —
+lives in `querypilot.ipynb`. Open it and run all cells top to bottom:
 
 ```bash
-.venv/bin/uvicorn app:app
+.venv/bin/jupyter notebook querypilot.ipynb
 ```
 
-Then open http://127.0.0.1:8000 and ask a question. You get a plain-English
-answer, a chart, the data table, the SQL, and a short trace of what the agent did.
-
-## Run in the terminal
-
-```bash
-.venv/bin/python main.py
-```
-
-Then ask things like:
-
-- How many customers are in the South region?
-- What is the total revenue per product category?
-- Which product has the highest price?
-
-You get the SQL, the rows, a plain-English answer, and a suggested chart type.
+The last cell starts the web server in the notebook itself. Then open
+http://127.0.0.1:8000. The database starts empty — upload a CSV, Excel, or
+SQLite file with the upload button (or click "Load demo data" to try it on a
+small sample sales database) and then ask a question. You get a plain-English
+answer, a chart, the data table, the SQL, and a short trace of what the agent
+did.
 
 ## Use your own data
 
-You can load a CSV or Excel file and ask questions about it. Column names are
-cleaned and the types are inferred automatically.
+Drop a CSV, Excel, or `.db`/`.sqlite` file into the upload button in the web
+app, or load a file straight from a notebook cell:
 
 ```python
-import loader
-loader.load_file("sales.csv")   # becomes a table you can query
+load_file("sales.csv")   # becomes a table you can query
 ```
 
 ## Evaluation
 
-There is a small test set of questions with known-correct SQL. The eval runs the
-agent on each and checks the results match.
+There is a small test set of questions (`eval/testset.json`) with
+known-correct SQL. The `run_eval()` cell near the bottom of the notebook runs
+the agent on each and checks the results match.
 
-```bash
-.venv/bin/python eval/run_eval.py
-```
-
-Latest run: 17/18 correct (94%) on the test set.
-
-The one miss read "average order value" as a median instead of a mean. The SQL
-ran fine, it was just the wrong reading of the question, so the self-correction
-retry (which fixes broken queries) does not help there. On this data the model
-rarely writes broken SQL, so self-correction acts as a safety net rather than
-something that lifts the score.
+Latest run: 18/18 correct (100%), 0 needed a retry. It bounces around a bit
+run to run (the model isn't deterministic) - the one miss seen before was
+"average order value" read as a median instead of a mean, a wrong reading of
+the question rather than broken SQL, so self-correction doesn't help there.
+On this data the model rarely writes broken SQL in the first place, so
+self-correction acts as a safety net rather than something that lifts the
+score.
 
 ## Files
 
+- `querypilot.ipynb` - everything: database setup, the agent (SQL + safety
+  check + self-correcting loop + explain), the chart picker, the FastAPI
+  backend, and the eval runner
 - `seed.sql` - sample sales database (customers, products, orders)
-- `db.py` - database setup, schema, running queries
-- `agent.py` - the agent: writes SQL, safety check, self-correcting loop, explain
-- `loader.py` - load CSV / Excel files into the database
-- `charts.py` - pick a chart type for a result
-- `main.py` - command-line runner
-- `app.py` - web backend (FastAPI)
 - `web/` - the web page (HTML, CSS, JS)
-- `eval/` - test set and evaluation script
+- `eval/testset.json` - test questions with known-correct SQL
